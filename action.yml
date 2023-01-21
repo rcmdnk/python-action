@@ -54,6 +54,10 @@ inputs:
     description: 'push coverage result'
     default: '0'
     required: true
+  github_token:
+    description: 'TOKEN to push the coverage branch'
+    default: ''
+    required: true
   pre-commit:
     description: 'run pre-commit'
     default: '1'
@@ -151,7 +155,7 @@ runs:
       if: ${{ inputs.coverage == '1' && inputs.coverage-push }}
       uses: ad-m/github-push-action@master
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ inputs.github_token }}
         branch: coverage
     - name: Check tests
       if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
