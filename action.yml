@@ -1,0 +1,176 @@
+name: 'Python Test Action'
+description: 'GitHub Action for Python (Poetry, pytest with coverage, linters with pre-commit) '
+author: 'rcmdnk'
+branding:
+  icon: 'check-square'
+  color: 'gray-dark'
+
+inputs:
+  checkout:
+    description: 'checkout repository'
+    default: '1'
+    required: true
+  setup-python:
+    description: 'setup python'
+    default: '1'
+    required: true
+  python-version:
+    description: 'python version'
+    default: '3.10'
+    required: true
+  poetry:
+    description: 'install poetry and run poetry install'
+    default: '1'
+    required: true
+  cache-path:
+    description: 'cache path'
+    default: '~/.cache/pypoetry'
+    required: true
+  cache:
+    description: 'use cache for poetry'
+    default: '1'
+    required: true
+  pytest:
+    description: 'run pytest'
+    default: '1'
+    required: true
+  pytest-tests-path:
+    description: 'Path for tests directory'
+    default: 'tests/'
+    required: true
+  pytest-ignore:
+    description: 'comma separated test file names which are excluded from the tests.'
+    default: ''
+    required: true
+  pytest-cov-path:
+    description: 'Path for the coverage'
+    default: 'src'
+    required: true
+  coverage:
+    description: 'check coverage of pytest'
+    default: '1'
+    required: true
+  coverage-push:
+    description: 'push coverage result'
+    default: '0'
+    required: true
+  pre-commit:
+    description: 'run pre-commit'
+    default: '1'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v3
+      if: ${{ inputs.checkout == '1' }}
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+    - uses: actions/setup-python@v4
+      if: ${{ inputs.setup-python == '1' }}
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Cache Packages
+      uses: actions/cache@v3
+      if: ${{ inputs.cache == '1' }}
+      with:
+        path: ${{ inputs.cache-path }}
+        key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }} }}
+    - name: Install poetry
+      if: ${{ inputs.poetry == '1' }}
+      run: pip install poetry
+      shell: bash
+    - name: Poetry setup
+      if: ${{ inputs.poetry == '1' }}
+      run: poetry install
+      shell: bash
+    - name: Run test
+      id: pytest
+      if: ${{ inputs.pytest == '1' }}
+      continue-on-error: true
+      run: |
+        if [ "${{ inputs.coverage }}" = "1" ];then
+          pytest_opt="--junitxml=pytest.xml --cov-report=term-missing:skip-covered"
+        fi
+        if [ -n "${{ inputs.pytest-cov }}" ];then
+            pytest_opt="$pytest_opt --cov=${{ inputs.pytest-cov }}"
+        fi
+        if [ -n "${{ inputs.pytest-ignore }}" ];then
+            IFS="," files=(${{ inputs.pytest-ignore }})
+            for f in ${files[@]};do
+              pytest_opt="$pytest_opt --ignore=\"$f\""
+            done
+        fi
+        poetry run pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }} | tee pytest-coverage.txt
+      shell: bash
+    - name: pre-commit
+      if: ${{ inputs.pre-commit == '1' }}
+      id: preCommit
+      continue-on-error: true
+      run: poetry run pre-commit run -a
+      shell: bash
+    - name: Pytest coverage comment
+      id: coverageComment
+      if: ${{ inputs.coverage == '1' }}
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        hide-comment: true
+        pytest-coverage-path: ./pytest-coverage.txt
+        junitxml-path: ./pytest.xml
+    - name: Check the output coverage
+      if: ${{ inputs.coverage == '1' }}
+      run: |
+        echo "Coverage Percantage - ${{ steps.coverageComment.outputs.coverage }}"
+        echo "Coverage Color - ${{ steps.coverageComment.outputs.color }}"
+        echo "Coverage Warnings - ${{ steps.coverageComment.outputs.warnings }}"
+        echo "Coverage Errors - ${{ steps.coverageComment.outputs.errors }}"
+        echo "Coverage Failures - ${{ steps.coverageComment.outputs.failures }}"
+        echo "Coverage Skipped - ${{ steps.coverageComment.outputs.skipped }}"
+        echo "Coverage Tests - ${{ steps.coverageComment.outputs.tests }}"
+        echo "Coverage Time - ${{ steps.coverageComment.outputs.time }}"
+        echo "Not Success Test Info - ${{ steps.coverageComment.outputs.notSuccessTestInfo }}"
+      shell: bash
+    - name: Update Readme in coverage branch with Coverage Html and commit to coverage branch
+      if: ${{ inputs.coverage == '1' && inputs.coverage-push }}
+      run: |
+        coverage=$(git branch -a|grep "remotes/origin/coverage$") || :
+        if [ -z "$coverage" ];then
+          git checkout --orphan coverage
+          git rm -rf .
+        else
+          git checkout coverage
+        fi
+        echo "[![test](https://github.com/${GITHUB_REPOSITORY}/actions/workflows/test.yml/badge.svg)](https://github.com/${GITHUB_REPOSITORY}/actions/workflows/test.yml)" > ./README.md
+        echo -e ${{ steps.coverageComment.outputs.summaryReport }} >> ./README.md
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add README.md
+        PRE_COMMIT_ALLOW_NO_CONFIG=1 git commit -m "Update coverage"
+      shell: bash
+    - name: Push
+      if: ${{ inputs.coverage == '1' && inputs.coverage-push }}
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: coverage
+    - name: Check tests
+      if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
+      run: |
+        if test ${{inputs.pytest}} == '1' && (((${{ steps.coverageComment.outputs.failures }} != 0)) || ((${{ steps.coverageComment.outputs.errors }} != 0)));then
+          pytest=0
+        else
+          pytest=1
+        fi
+        if [ "$pytest" = 0 ];then
+          echo 'Test failed!'
+        fi
+        if test ${{inputs.pre-commit}} == '1' && test ${{ steps.preCommit.outcome }} != "success";then
+          pre_commit=0
+        else
+          pre_commit=1
+        fi
+        if [ "$pre_commit" = 0 ];then
+          echo 'Need to fix by following pre-commit!'
+        fi
+        (( pytest == 1 )) && (( pre_commit == 1 ))
+      shell: bash
