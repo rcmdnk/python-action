@@ -22,13 +22,13 @@ inputs:
     description: 'install poetry and run poetry install'
     default: '1'
     required: true
-  cache-path:
-    description: 'cache path'
-    default: '~/.cache/pypoetry'
-    required: true
   cache:
     description: 'use cache for poetry'
     default: '1'
+    required: true
+  cache-path:
+    description: 'cache path'
+    default: '~/.cache/pypoetry'
     required: true
   pytest:
     description: 'run pytest'
@@ -135,7 +135,7 @@ runs:
         echo "Not Success Test Info - ${{ steps.coverageComment.outputs.notSuccessTestInfo }}"
       shell: bash
     - name: Update Readme in coverage branch with Coverage Html and commit to coverage branch
-      if: ${{ inputs.coverage == '1' && inputs.coverage-push }}
+      if: ${{ inputs.coverage == '1' && inputs.coverage-push == '1'}}
       run: |
         coverage=$(git branch -a|grep "remotes/origin/coverage$") || :
         if [ -z "$coverage" ];then
@@ -152,7 +152,7 @@ runs:
         PRE_COMMIT_ALLOW_NO_CONFIG=1 git commit -m "Update coverage"
       shell: bash
     - name: Push
-      if: ${{ inputs.coverage == '1' && inputs.coverage-push }}
+      if: ${{ inputs.coverage == '1' && inputs.coverage-push == '1' }}
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ inputs.github_token }}
