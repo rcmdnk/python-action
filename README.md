@@ -1,6 +1,6 @@
 # python-action
 
-[![test](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml/badge.svg)](https://github.com/rcmdnk/python-action-test/workflows/test.yml)
+[![test](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml/badge.svg)](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml)
 
 GitHub Action for Python (Poetry, pytest with coverage and  linters with pre-commit).
 
