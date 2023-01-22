@@ -18,6 +18,18 @@ inputs:
     description: '`python-version` for setup-python.'
     default: '3.10'
     required: true
+  pip:
+    description: 'pip command.'
+    default: 'pip'
+    required: true
+  setup-cmd:
+    description: 'Python environment setup command.'
+    default: 'poetry install'
+    required: true
+  pip-packages:
+    description: 'Space separated package names to be installed by pip.'
+    default: ''
+    required: true
   poetry:
     description: 'Set 1 to setup by poetry.'
     default: '1'
@@ -87,15 +99,22 @@ runs:
     - name: Install poetry
       if: ${{ inputs.poetry == '1' }}
       run: |
-        echo "::group::pip install poetry"
-        pip install poetry
+        echo "::group::${{ inputs.pip}} install poetry"
+        ${{ inputs.pip }} install poetry
         echo "::endgroup::"
       shell: bash
-    - name: Poetry setup
-      if: ${{ inputs.poetry == '1' }}
+    - name: Setup environment
+      if: ${{ inputs.setup-cmd != '' }}
       run: |
-        echo "::group::poetry install"
-        poetry install
+        echo "::group::${{ inputs.setup-cmd }}"
+        ${{ inputs.setup-cmd }}
+        echo "::endgroup::"
+      shell: bash
+    - name: Install packages
+      if: ${{ inputs.pip-packages != '' }}
+      run: |
+        echo "::group::${{ inputs.pip }} install ${{ inputs.pip-packages }}"
+        ${{ inputs.pip }} install ${{ inputs.pip-packages }}
         echo "::endgroup::"
       shell: bash
     - name: Run test
