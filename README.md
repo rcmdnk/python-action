@@ -23,7 +23,7 @@ pytest-ignore| Comma separated test files which are excluded from the pytest. |'
 pytest-cov-path| Path to check coverage.| 'src' | No
 coverage | Set '1' to check coverage for pytest. | '1' | No
 coverage-push | Set '1' to push the coverage result to `coverage` branch. | '0' | No
-github_token | Token to push `coverage` branch. Set `secrets.GITHUB_TOKEN` if you set '1' for coverage.| '' | No
+github_token | Token to push `coverage` branch. Set `secrets.GITHUB_TOKEN` if you set '1' for coverage.| "${{ github.token }}" | No
 pre-commit | Set '1' to run pre-commit. | '1' | No
 
 If you want to enable `coverage`, 

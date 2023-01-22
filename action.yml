@@ -56,7 +56,7 @@ inputs:
     required: true
   github_token:
     description: 'TOKEN to push the coverage branch'
-    default: ''
+    default: ${{ github.token }}
     required: true
   pre-commit:
     description: 'run pre-commit'
