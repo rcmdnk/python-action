@@ -17,7 +17,7 @@ jobs:
       - name: Check branch
         id: check_branch
         run: |
-          if [ "$GITHUB_REF" == "/refs/heads/main" ];then
+          if [ "$GITHUB_REF" = "refs/heads/main" ];then
             echo "main=true" >> $GITHUB_OUTPUT
           else
             echo "main=false" >> $GITHUB_OUTPUT
