@@ -96,8 +96,8 @@ runs:
         if [ "${{ inputs.coverage }}" = "1" ];then
           pytest_opt="--junitxml=pytest.xml --cov-report=term-missing:skip-covered"
         fi
-        if [ -n "${{ inputs.pytest-cov }}" ];then
-            pytest_opt="$pytest_opt --cov=${{ inputs.pytest-cov }}"
+        if [ -n "${{ inputs.pytest-cov-path }}" ];then
+            pytest_opt="$pytest_opt --cov=${{ inputs.pytest-cov-path }}"
         fi
         if [ -n "${{ inputs.pytest-ignore }}" ];then
             IFS="," files=(${{ inputs.pytest-ignore }})
