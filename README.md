@@ -30,4 +30,4 @@ pre-commit | Set '1' to run pre-commit. | '1' | No
 
 If you want to enable `coverage`, 
 go **Settings** -> **Code automation, Actions, General**,  
-and set **Read and write permissions** in **Workflow permissions**.
+and set **Read and write permissions** and check **Allow GitHub Actions to create and approve pull requests** in **Workflow permissions**.
