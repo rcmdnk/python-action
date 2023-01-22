@@ -1,0 +1,23 @@
+---
+name: test
+
+on:
+  push:
+    branches-ignore:
+      - '**'
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run test workflow
+        run : echo
+      - uses: convictional/trigger-workflow-and-wait@v1.6.5
+        with:
+          owner: rcmdnk
+          repo: python-action-test
+          github_token: ${{ secrets.PYTHON_ACTION_TEST_TOKEN }}
+          propagate_failure: true
+
