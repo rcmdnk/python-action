@@ -7,60 +7,64 @@ branding:
 
 inputs:
   checkout:
-    description: 'checkout repository'
+    description: 'Set 1 to run checkout.'
     default: '1'
     required: true
   setup-python:
-    description: 'setup python'
+    description: 'Set 1 to run setup-python.'
     default: '1'
     required: true
   python-version:
-    description: 'python version'
+    description: '`python-version` for setup-python.'
     default: '3.10'
     required: true
   poetry:
-    description: 'install poetry and run poetry install'
+    description: 'Set 1 to setup by poetry.'
     default: '1'
     required: true
   cache:
-    description: 'use cache for poetry'
+    description: 'Set 1 to use cache with cache action.'
     default: '1'
     required: true
   cache-path:
-    description: 'cache path'
+    description: 'Cache path.'
     default: '~/.cache/pypoetry'
     required: true
+  cache-hash-file:
+    description: 'File name to be used for the cache hash key.'
+    default: '**/poetry.lock'
+    required: true
   pytest:
-    description: 'run pytest'
+    description: 'Set 1 to run pytest.'
     default: '1'
     required: true
   pytest-tests-path:
-    description: 'Path for tests directory'
+    description: 'Path to the directory of the test files.'
     default: 'tests/'
     required: true
   pytest-ignore:
-    description: 'comma separated test file names which are excluded from the tests.'
+    description: 'Comma separated test file names which are excluded from the pytest.'
     default: ''
     required: true
   pytest-cov-path:
-    description: 'Path for the coverage'
+    description: 'Path to check coverage.'
     default: 'src'
     required: true
   coverage:
-    description: 'check coverage of pytest'
+    description: 'Set 1 to check coverage for pytest.'
     default: '1'
     required: true
   coverage-push:
-    description: 'push coverage result'
+    description: 'Set 1 to push the coverage result to coverage branch.'
     default: '0'
     required: true
   github_token:
-    description: 'TOKEN to push the coverage branch'
+    description: 'Token to push the coverage branch'
     default: ${{ github.token }}
     required: true
   pre-commit:
-    description: 'run pre-commit'
-    default: '1'
+    description: 'Set 1 to run pre-commit.'
+    default: '0'
     required: true
 runs:
   using: 'composite'
@@ -79,14 +83,20 @@ runs:
       if: ${{ inputs.cache == '1' }}
       with:
         path: ${{ inputs.cache-path }}
-        key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }} }}
+        key: cache-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles(inputs.cache-hash-file) }}
     - name: Install poetry
       if: ${{ inputs.poetry == '1' }}
-      run: pip install poetry
+      run: |
+        echo "::group::pip install poetry"
+        pip install poetry
+        echo "::endgroup::"
       shell: bash
     - name: Poetry setup
       if: ${{ inputs.poetry == '1' }}
-      run: poetry install
+      run: |
+        echo "::group::poetry install"
+        poetry install
+        echo "::endgroup::"
       shell: bash
     - name: Run test
       id: pytest
@@ -105,13 +115,18 @@ runs:
               pytest_opt="$pytest_opt --ignore=\"$f\""
             done
         fi
-        poetry run pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }} | tee pytest-coverage.txt
+        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        $poetry_cmd pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }} | tee pytest-coverage.txt
       shell: bash
     - name: pre-commit
       if: ${{ inputs.pre-commit == '1' }}
       id: preCommit
       continue-on-error: true
-      run: poetry run pre-commit run -a
+      run: |
+        echo "::group::pre-commit"
+        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        $poetry_cmd pre-commit run -a
+        echo "::endgroup::"
       shell: bash
     - name: Pytest coverage comment
       id: coverageComment
@@ -124,6 +139,7 @@ runs:
     - name: Check the output coverage
       if: ${{ inputs.coverage == '1' }}
       run: |
+        echo "::group::coverage result"
         echo "Coverage Percantage - ${{ steps.coverageComment.outputs.coverage }}"
         echo "Coverage Color - ${{ steps.coverageComment.outputs.color }}"
         echo "Coverage Warnings - ${{ steps.coverageComment.outputs.warnings }}"
@@ -133,10 +149,12 @@ runs:
         echo "Coverage Tests - ${{ steps.coverageComment.outputs.tests }}"
         echo "Coverage Time - ${{ steps.coverageComment.outputs.time }}"
         echo "Not Success Test Info - ${{ steps.coverageComment.outputs.notSuccessTestInfo }}"
+        echo "::endgroup::"
       shell: bash
     - name: Update Readme in coverage branch with Coverage Html and commit to coverage branch
       if: ${{ inputs.coverage == '1' && inputs.coverage-push == '1'}}
       run: |
+        echo "::group::coverage branch"
         coverage=$(git branch -a|grep "remotes/origin/coverage$") || :
         if [ -z "$coverage" ];then
           git checkout --orphan coverage
@@ -150,6 +168,7 @@ runs:
         git config --local user.name "github-actions[bot]"
         git add README.md
         PRE_COMMIT_ALLOW_NO_CONFIG=1 git commit -m "Update coverage"
+        echo "::endgroup::"
       shell: bash
     - name: Push
       if: ${{ inputs.coverage == '1' && inputs.coverage-push == '1' }}
@@ -160,21 +179,29 @@ runs:
     - name: Check tests
       if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
       run: |
-        if test ${{inputs.pytest}} == '1' && (((${{ steps.coverageComment.outputs.failures }} != 0)) || ((${{ steps.coverageComment.outputs.errors }} != 0)));then
-          pytest=0
-        else
-          pytest=1
+        echo "|Check|Result|" > $GITHUB_STEP_SUMMARY
+        echo "|:-|:-:|" >> $GITHUB_STEP_SUMMARY
+        pytest=1
+        if [ "${{ inputs.pytest }}" = 1 ];then
+          if [ "${{ steps.coverageComment.outputs.failures }}" != 0 ] || [ "${{ steps.coverageComment.outputs.errors }}" != 0 ];then
+            pytest=0
+            echo "|pytest|:x:}}|" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "|pytest|:white_check_mark:|" >> $GITHUB_STEP_SUMMARY
+          fi
         fi
-        if [ "$pytest" = 0 ];then
-          echo 'Test failed!'
+        if [ "${{ inputs.coverage }}" = 1 ];then
+          echo "|coverage|${{ steps.coverageComment.outputs.coverage }}|" >> $GITHUB_STEP_SUMMARY
         fi
-        if test ${{inputs.pre-commit}} == '1' && test ${{ steps.preCommit.outcome }} != "success";then
-          pre_commit=0
-        else
-          pre_commit=1
-        fi
-        if [ "$pre_commit" = 0 ];then
-          echo 'Need to fix by following pre-commit!'
+        echo "Coverage Percantage - ${{ steps.coverageComment.outputs.coverage }}"
+        pre_commit=1
+        if [ "${{ inputs.pre-commit }}" = 1 ];then
+          if [ "${{ steps.preCommit.outcome }}" != "success" ];then
+            pre_commit=0
+            echo "|pre-commit|:x:}}|" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "|pre-commit|:white_check_mark:|" >> $GITHUB_STEP_SUMMARY
+          fi
         fi
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash
