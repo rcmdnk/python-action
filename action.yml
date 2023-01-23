@@ -170,7 +170,7 @@ runs:
           files=( $(echo ${{ inputs.pytest-ignore }}) )
           IFS=$IFS_ORIG
           for f in ${files[@]};do
-            pytest_opt="$pytest_opt --ignore=\"$f\""
+            pytest_opt="$pytest_opt --ignore=$f"
           done
         fi
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
