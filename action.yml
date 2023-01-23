@@ -158,24 +158,25 @@ runs:
       if: ${{ inputs.pytest == '1' }}
       continue-on-error: true
       run: |
+        pytest_opt=("--durations=0")
         if [ "${{ inputs.coverage }}" = "1" ];then
-          pytest_opt="--junitxml=pytest.xml --cov-report=term-missing:skip-covered"
+          pytest_opt=("${pytest_opt[@]}" "--junitxml=pytest.xml" "--cov-report=term-missing:skip-covered")
         fi
         if [ -n "${{ inputs.pytest-cov-path }}" ];then
-          pytest_opt="$pytest_opt --cov=${{ inputs.pytest-cov-path }}"
+          pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.pytest-cov-path }}")
         fi
         if [ -n "${{ inputs.pytest-ignore }}" ];then
           IFS_ORIG=$IFS
           IFS=","
-          files=( $(echo ${{ inputs.pytest-ignore }}) )
+          read -a files <<< "${{ inputs.pytest-ignore }}"
           IFS=$IFS_ORIG
-          for f in ${files[@]};do
-            pytest_opt="$pytest_opt --ignore=$f"
+          for f in "${files[@]}";do
+            pytest_opt=("${pytest_opt[@]}" "--ignore=$f")
           done
         fi
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
-        echo \$ $poetry_cmd pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }}
-        $poetry_cmd pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }} | tee pytest-coverage.txt
+        echo \$ $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
+        $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee pytest-coverage.txt
       shell: bash
     - name: pre-commit
       if: ${{ inputs.pre-commit == '1' }}
