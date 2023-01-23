@@ -35,13 +35,30 @@ pre-commit | Set `1` to run pre-commit. | `0` | No
 If you want to enable `coverage`,
 add `jobs.<job_id>.permissions.contents: write` in your workflow file
 or
-go *`*Settings** -> **Code automation, Actions, General**,  
+go *`*Settings** -> **Code automation, Actions, General**,
 and set **Read and write permissions** and check **Allow GitHub Actions to create and approve pull requests** in **Workflow permissions**.
 
 Ref:
 
 * [Automatic token authentication - GitHub Docs](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token)
 
+## Outputs
+
+Name | Description
+-|:-
+pytest| pytest status.
+pre_commit| pre-commit status.
+coverage| Coverage Percantage.
+color| Coverage Color.
+warnings| Coverage Warnings.
+errors| Coverage Errors.
+failures| Coverage Failures.
+skipped| Coverage Skipped.
+tests| Coverage Tests.
+time| Coverage Time.
+notSuccessTestInfo| Not Success Test Info.
+
+## Examples
 
 See examples:
 
