@@ -28,6 +28,7 @@ jobs:
           repo: python-action-test
           github_token: ${{ secrets.PYTHON_ACTION_TEST_TOKEN }}
           workflow_file_name: test.yml
+          github_user: rcmdnk@python-action
           propagate_failure: true
           client_payload: "{\"head_python_action\": \"${{ steps.check_branch.outputs.main }}\"}"
 
