@@ -138,6 +138,7 @@ runs:
           done
         fi
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        echo \$ $poetry_cmd pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }}
         $poetry_cmd pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }} | tee pytest-coverage.txt
       shell: bash
     - name: pre-commit
