@@ -45,6 +45,6 @@ Ref:
 
 See examples:
 
-* [python-action-test/test.yml at main · rcmdnk/python-action-test](https://github.com/rcmdnk/python-action-test/blob/main/.github/workflows/test.yml)
+* [rcmdnk/python-action-test: test repository for python-action](https://github.com/rcmdnk/python-action-test/)
   * Setup with poetry.
   * Set `is_main.flag` to run `pre-commit` and `push` only for the main combination of the matrix of `os` and `python-version`.
