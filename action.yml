@@ -126,13 +126,16 @@ runs:
           pytest_opt="--junitxml=pytest.xml --cov-report=term-missing:skip-covered"
         fi
         if [ -n "${{ inputs.pytest-cov-path }}" ];then
-            pytest_opt="$pytest_opt --cov=${{ inputs.pytest-cov-path }}"
+          pytest_opt="$pytest_opt --cov=${{ inputs.pytest-cov-path }}"
         fi
         if [ -n "${{ inputs.pytest-ignore }}" ];then
-            IFS="," files=(${{ inputs.pytest-ignore }})
-            for f in ${files[@]};do
-              pytest_opt="$pytest_opt --ignore=\"$f\""
-            done
+          IFS_ORIG=$IFS
+          IFS=","
+          files=( $(echo ${{ inputs.pytest-ignore }}) )
+          IFS=$IFS_ORIG
+          for f in ${files[@]};do
+            pytest_opt="$pytest_opt --ignore=\"$f\""
+          done
         fi
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
         $poetry_cmd pytest --durations=0 $pytest_opt ${{ inputs.pytest-tests-path }} | tee pytest-coverage.txt
