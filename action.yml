@@ -78,6 +78,42 @@ inputs:
     description: 'Set 1 to run pre-commit.'
     default: '0'
     required: true
+
+outputs:
+  pytest:
+    description: "pytest status"
+    value: ${{ steps.check_status.outputs.pytest }}
+  pre_commit:
+    description: "pre-commit status"
+    value: ${{ steps.check_status.outputs.pre_commit }}
+  coverage:
+    description: "Coverage Percantage"
+    value: ${{ steps.coverageComment.outputs.coverage }}
+  color:
+    description: "Coverage Color"
+    value: ${{ steps.coverageComment.outputs.color }}
+  warnings:
+    description: "Coverage Warnings"
+    value: ${{ steps.coverageComment.outputs.warnings }}
+  errors:
+    description: "Coverage Errors"
+    value: ${{ steps.coverageComment.outputs.errors }}
+  failures:
+    description: "Coverage Failures"
+    value: ${{ steps.coverageComment.outputs.failures }}
+  skipped:
+    description: "Coverage Skipped"
+    value: ${{ steps.coverageComment.outputs.skipped }}
+  tests:
+    description: "Coverage Tests"
+    value: ${{ steps.coverageComment.outputs.tests }}
+  time:
+    description: "Coverage Time"
+    value: ${{ steps.coverageComment.outputs.time }}
+  notSuccessTestInfo:
+    description: "Not Success Test Info"
+    value: ${{ steps.coverageComment.outputs.notSuccessTestInfo }}
+
 runs:
   using: 'composite'
   steps:
@@ -199,7 +235,8 @@ runs:
       with:
         github_token: ${{ inputs.github_token }}
         branch: coverage
-    - name: Check tests
+    - name: Check status
+      id: check_status
       if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
       run: |
         echo "|Check|Result|" > $GITHUB_STEP_SUMMARY
@@ -226,5 +263,7 @@ runs:
             echo "|pre-commit|:white_check_mark:|" >> $GITHUB_STEP_SUMMARY
           fi
         fi
+        echo "pytest=$pytest" >> $GITHUB_OUTPUT
+        echo "pre_commit=$pre_commit" >> $GITHUB_OUTPUT
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash
