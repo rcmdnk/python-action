@@ -260,10 +260,10 @@ runs:
             output="${output}![pre-commit](https://img.shields.io/badge/pre-commit-passing-success?style=plastic)"
           fi
         fi
-        echo "${output}" > $GITHUB_OUTPUT
+        echo "${output}" > $GITHUB_STEP_SUMMARY
 
         if [ "${{ inputs.coverage }}" = 1 ];then
-          echo -e "$output" >> $GITHUB_OUTPUT
+          echo -e "$output" >> $GITHUB_STEP_SUMMARY
         fi
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash
