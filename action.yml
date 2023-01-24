@@ -246,18 +246,18 @@ runs:
         if [ "${{ inputs.pytest }}" = 1 ];then
           if [ "${{ steps.coverageComment.outputs.failures }}" != 0 ] || [ "${{ steps.coverageComment.outputs.errors }}" != 0 ];then
             pytest=0
-            output="${output}![pytest](https://img.shields.io/badge/pytest-failing-critical?style=plastic)"
+            output="${output}![pytest](https://img.shields.io/badge/pytest-failing-critical)"
           else
-            output="${output}![pytest](https://img.shields.io/badge/pytest-passing-success?style=plastic)"
+            output="${output}![pytest](https://img.shields.io/badge/pytest-passing-success)"
           fi
         fi
         pre_commit=1
         if [ "${{ inputs.pre-commit }}" = 1 ];then
           if [ "${{ steps.preCommit.outcome }}" != "success" ];then
             pre_commit=0
-            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical?style=plastic)"
+            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical)"
           else
-            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-passing-success?style=plastic)"
+            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-passing-success)"
           fi
         fi
         echo -n "${output}" > $GITHUB_STEP_SUMMARY
