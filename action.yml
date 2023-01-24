@@ -222,7 +222,8 @@ runs:
         else
           git checkout coverage
         fi
-        echo "[![test](https://github.com/${GITHUB_REPOSITORY}/actions/workflows/test.yml/badge.svg)](https://github.com/${GITHUB_REPOSITORY}/actions/workflows/test.yml)" > ./README.md
+        workflow_file=$(basename $(echo $GITHUB_WORKFLOW_REF | cut -d @ -f1))
+        echo "[![$GITHUB_WORKFLOW]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_file/badge.svg)]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_file)" > ./README.md
         echo -e ${{ steps.coverageComment.outputs.summaryReport }} >> ./README.md
         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
@@ -240,31 +241,30 @@ runs:
       id: check_status
       if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
       run: |
-        echo "|Check|Result|" > $GITHUB_STEP_SUMMARY
-        echo "|:-|:-:|" >> $GITHUB_STEP_SUMMARY
+        output=""
         pytest=1
         if [ "${{ inputs.pytest }}" = 1 ];then
           if [ "${{ steps.coverageComment.outputs.failures }}" != 0 ] || [ "${{ steps.coverageComment.outputs.errors }}" != 0 ];then
             pytest=0
-            echo "|pytest|:x:}}|" >> $GITHUB_STEP_SUMMARY
+            output="${output}![pytest](https://img.shields.io/badge/pytest-failing-critical?style=plastic)"
           else
-            echo "|pytest|:white_check_mark:|" >> $GITHUB_STEP_SUMMARY
+            output="${output}![pytest](https://img.shields.io/badge/pytest-passing-success?style=plastic)"
           fi
         fi
-        if [ "${{ inputs.coverage }}" = 1 ];then
-          echo "|coverage|${{ steps.coverageComment.outputs.coverage }}|" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "Coverage Percantage - ${{ steps.coverageComment.outputs.coverage }}"
         pre_commit=1
         if [ "${{ inputs.pre-commit }}" = 1 ];then
           if [ "${{ steps.preCommit.outcome }}" != "success" ];then
             pre_commit=0
-            echo "|pre-commit|:x:}}|" >> $GITHUB_STEP_SUMMARY
+            output="${output}![pre-commit](https://img.shields.io/badge/pre-commit-failing-critical?style=plastic)"
           else
-            echo "|pre-commit|:white_check_mark:|" >> $GITHUB_STEP_SUMMARY
+            output="${output}![pre-commit](https://img.shields.io/badge/pre-commit-passing-success?style=plastic)"
           fi
         fi
-        echo "pytest=$pytest" >> $GITHUB_OUTPUT
-        echo "pre_commit=$pre_commit" >> $GITHUB_OUTPUT
+        output="${output}\n"
+
+        if [ "${{ inputs.coverage }}" = 1 ];then
+          output="${output}${{ steps.coverageComment.outputs.summaryReport }}"
+        fi
+        echo -e "$output" >> $GITHUB_OUTPUT
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash
