@@ -255,9 +255,9 @@ runs:
         if [ "${{ inputs.pre-commit }}" = 1 ];then
           if [ "${{ steps.preCommit.outcome }}" != "success" ];then
             pre_commit=0
-            output="${output}![pre-commit](https://img.shields.io/badge/pre-commit-failing-critical?style=plastic)"
+            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical?style=plastic)"
           else
-            output="${output}![pre-commit](https://img.shields.io/badge/pre-commit-passing-success?style=plastic)"
+            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-passing-success?style=plastic)"
           fi
         fi
         echo -n "${output}" > $GITHUB_STEP_SUMMARY
