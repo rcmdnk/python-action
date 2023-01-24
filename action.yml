@@ -263,7 +263,7 @@ runs:
         echo "${output}" > $GITHUB_STEP_SUMMARY
 
         if [ "${{ inputs.coverage }}" = 1 ];then
-          echo -e "$output" >> $GITHUB_STEP_SUMMARY
+          echo -e ${{ steps.coverageComment.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
         fi
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash
