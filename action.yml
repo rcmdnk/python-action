@@ -260,7 +260,7 @@ runs:
             output="${output}![pre-commit](https://img.shields.io/badge/pre-commit-passing-success?style=plastic)"
           fi
         fi
-        echo "${output}" > $GITHUB_STEP_SUMMARY
+        echo -n "${output}" > $GITHUB_STEP_SUMMARY
 
         if [ "${{ inputs.coverage }}" = 1 ];then
           echo -e ${{ steps.coverageComment.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
