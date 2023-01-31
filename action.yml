@@ -186,6 +186,7 @@ runs:
         echo "::group::pre-commit"
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
         $poetry_cmd pre-commit run -a
+        git checkout .
         echo "::endgroup::"
       shell: bash
     - name: Pytest coverage comment
