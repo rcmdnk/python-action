@@ -165,16 +165,14 @@ jobs:
           ref: ${{ github.ref }}
           github_token: ${{ github.token }}
           workflow_file_name: dispatch.yml
-          propagate_failure: true
       - name: Write workflow url
         run: |
           echo Main job URL: ${{ steps.dispatch.outputs.workflow_url }} >> $GITHUB_STEP_SUMMARY
       - name: Check status
         run: |
-          if [ "${{ steps.dispatch.outcome }}" != "success" ];then
+          if [ "${{ steps.dispatch.outputs.conclusion }}" != "success" ];then
             exit 1
           fi
-
 ```
 
 * **dispatch.yml** has default values of the main condition.
