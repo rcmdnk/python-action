@@ -70,6 +70,10 @@ inputs:
     description: 'Set 1 to push the coverage result to coverage branch.'
     default: '0'
     required: true
+  coverage-push-condition:
+    description: 'Condition to push the coverage. This will be shown in the README if it is not empty.'
+    default: ''
+    required: true
   github_token:
     description: 'Token to push the coverage branch'
     default: ${{ github.token }}
@@ -227,8 +231,15 @@ runs:
         else
           git checkout coverage
         fi
+        echo -n > ./README.md
+        echo "commit: [$GITHUB_SHA]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_SHA)" >> ./README.md
+        echo "" >> ./README.md
+        if [ -n "${{ inputs.coverage-push-condition }}" ];then
+          echo "condition: ${{ inputs.coverage-push-condition }}" >> ./README.md
+          echo "" >> ./README.md
+        fi
         workflow_file=$(basename $(echo $GITHUB_WORKFLOW_REF | cut -d @ -f1))
-        echo "[![$GITHUB_WORKFLOW]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_file/badge.svg)]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_file)" > ./README.md
+        echo "[![$GITHUB_WORKFLOW]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_file/badge.svg)]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)" >> ./README.md
         echo -e ${{ steps.coverageComment.outputs.summaryReport }} >> ./README.md
         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
@@ -242,6 +253,11 @@ runs:
       with:
         github_token: ${{ inputs.github_token }}
         branch: coverage
+    - name: Go back to the original branch
+      if: ${{ inputs.coverage == '1' && inputs.coverage-push == '1'}}
+      run: |
+        git checkout $GITHUB_REF_NAME
+      shell: bash
     - name: Check status
       id: check_status
       if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
@@ -251,6 +267,7 @@ runs:
         pytest=1
         if [ "${{ inputs.pytest }}" = 1 ];then
           if [ "${{ steps.coverageComment.outputs.failures }}" != 0 ] || [ "${{ steps.coverageComment.outputs.errors }}" != 0 ];then
+            echo "Pytest failed!"
             pytest=0
             output="${output}![pytest](https://img.shields.io/badge/pytest-failing-critical)"
           else
@@ -260,6 +277,7 @@ runs:
         pre_commit=1
         if [ "${{ inputs.pre-commit }}" = 1 ];then
           if [ "${{ steps.preCommit.outcome }}" != "success" ];then
+            echo "pre-commit failed!"
             pre_commit=0
             output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical)"
           else
