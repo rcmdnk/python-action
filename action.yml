@@ -19,7 +19,7 @@ inputs:
     default: '3.10'
     required: true
   pip:
-    description: 'pip command.'
+    description: 'pip command (e.g. `pip`, `pip3`, `pip3.10`).'
     default: 'pip'
     required: true
   setup-cmd:
@@ -76,6 +76,10 @@ inputs:
     required: true
   pre-commit:
     description: 'Set 1 to run pre-commit.'
+    default: '0'
+    required: true
+  tmate:
+    description: 'Set 1 to run tmate.'
     default: '0'
     required: true
 
@@ -241,6 +245,7 @@ runs:
     - name: Check status
       id: check_status
       if: ${{ inputs.pytest == '1' || inputs.pre-commit == '1' }}
+      continue-on-error: ${{ inputs.tmate == '1' }}
       run: |
         output=""
         pytest=1
@@ -268,3 +273,6 @@ runs:
         fi
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash
+    - name: Setup tmate session
+      if: ${{ inputs.tmate == '1' }}
+      uses: mxschmitt/action-tmate@v3

@@ -31,6 +31,7 @@ coverage | Set `1` to check coverage for pytest. | `1` | No
 coverage-push | Set `1` to push the coverage result to `coverage` branch. | `0` | No
 github_token | Token to push `coverage` branch. Set `secrets.GITHUB_TOKEN` if you set `1` for coverage.| `${{ github.token }}` | No
 pre-commit | Set `1` to run pre-commit. | `0` | No
+tmate | Set `1` to run [tmate](https://mxschmitt.github.io/action-tmate/). | `0` | No
 
 If you want to enable `coverage`,
 add `jobs.<job_id>.permissions.contents: write` in your workflow file
@@ -41,6 +42,8 @@ and set **Read and write permissions** and check **Allow GitHub Actions to creat
 Ref:
 
 * [Automatic token authentication - GitHub Docs](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token)
+
+If you set `tmate = 1`, [tmate](https://mxschmitt.github.io/action-tmate/) session will be created and you can log in to the virtual environment by ssh.
 
 ## Outputs
 
