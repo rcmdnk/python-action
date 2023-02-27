@@ -25,7 +25,7 @@ pytest-cov-path| Path to check coverage.| `src` | No
 coverage | Set `1` to check coverage for pytest. | `1` | No
 coverage-push | Set `1` to push the coverage result to `coverage` branch. | `0` | No
 coverage-push-condition | Condition to push the coverage. This will be shown in the README if it is not empty. | '' | No
-github_token | Token to push `coverage` branch. Set `secrets.GITHUB_TOKEN` if you set `1` for coverage.| `${{ github.token }}` | No
+github_token | Token to push `coverage` branch.| `${{ github.token }}` | No
 pre-commit | Set `1` to run pre-commit. | `0` | No
 tmate | Set `1` to run [tmate](https://mxschmitt.github.io/action-tmate/). | `0` | No
 
@@ -140,6 +140,7 @@ jobs:
           fi
       - uses: rcmdnk/python-action@v1
         with:
+          python-version: "${{ matrix.python-version }}"
           coverage-push: "${{ env.IS_MAIN }}"
           coverage-push-condition: "branch=${{ env.MAIN_BRANCH }}, os=${{ env.MAIN_OS }}, python_version=${{ env.MAIN_PY_VER }}"
           pre-commit: "${{ env.IS_MAIN }}"
