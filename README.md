@@ -59,22 +59,23 @@ notSuccessTestInfo| Not Success Test Info.
 
 ## Examples
 
-### Simple example
+### Simple usage
 
-    steps:
+Add following step to your steps.
+
     - uses: rcmdnk/python-action@v1
 
-### Example use workflow_dispatch to change variables
+### Example to enable parameterized manual dispatch
 
-Prepare following two yaml files in .github/workflows:
+Full YAML example (e.g. python_test.yml):
 
-dispatch.yml:
 
 ```yaml
 ---
-name: dispatch
+name: python test
 
 on:
+  push:
   pull_request:
   workflow_dispatch:
     inputs:
@@ -103,6 +104,12 @@ on:
         required: false
         default: false
 
+env:
+  MAIN_BRANCH: ${{ inputs.main_branch || 'main' }}
+  MAIN_OS: ${{ inputs.main_os || 'ubuntu-latest' }}
+  MAIN_PY_VER: ${{ inputs.main_py_ver || '3.10' }}
+  TMATE: ${{ inputs.tmate || 'false' }}
+
 jobs:
   test_matrix:
     strategy:
@@ -115,14 +122,14 @@ jobs:
     steps:
       - name: Check is main
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/${{ inputs.main_branch }}" ] && [ "${{ matrix.os }}" = "${{ inputs.main_os }}" ] && [ "${{ matrix.python-version }}" = "${{ inputs.main_py_ver }}" ];then
+          if [ "${{ github.ref }}" = "refs/heads/${{ env.MAIN_BRANCH }}" ] && [ "${{ matrix.os }}" = "${{ env.MAIN_OS }}" ] && [ "${{ matrix.python-version }}" = "${{ env.MAIN_PY_VER }}" ];then
             echo "IS_MAIN=1" >> $GITHUB_ENV
             is_main=1
           else
             echo "IS_MAIN=0" >> $GITHUB_ENV
             is_main=0
           fi
-          if [ "${{ inputs.tmate }}" = "true" ];then
+          if [ "${{ inputs.TMATE }}" = "true" ];then
             if [ "$is_main" = 0 ];then
               echo "Tmate is enabled and this is not main, skip tests"
               exit 1
@@ -134,50 +141,12 @@ jobs:
       - uses: rcmdnk/python-action@v1
         with:
           coverage-push: "${{ env.IS_MAIN }}"
-          coverage-push-condition: "branch=${{ inputs.main_branch }}, os=${{ inputs.main_os }}, python_version=${{ inputs.main_py_ver }}"
+          coverage-push-condition: "branch=${{ env.MAIN_BRANCH }}, os=${{ env.MAIN_OS }}, python_version=${{ env.MAIN_PY_VER }}"
           pre-commit: "${{ env.IS_MAIN }}"
           tmate: "${{ env.DEBUG }}"
 ```
 
-test.yml:
-
-```yml
----
-name: test
-
-on:
-  push:
-    branches-ignore:
-      - "coverage"
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - uses: convictional/trigger-workflow-and-wait@v1.6.5
-        continue-on-error: true
-        with:
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          ref: ${{ github.ref }}
-          github_token: ${{ github.token }}
-          workflow_file_name: dispatch.yml
-      - name: Write workflow url
-        run: |
-          echo Main job URL: ${{ steps.dispatch.outputs.workflow_url }} >> $GITHUB_STEP_SUMMARY
-      - name: Check status
-        run: |
-          if [ "${{ steps.dispatch.outputs.conclusion }}" != "success" ];then
-            exit 1
-          fi
-```
-
-* **dispatch.yml** has default values of the main condition.
-* You can manually trigger dispatch.yml from `https://github.com/<owner>/<repo>/actions/workflows/dispatch.yml`
-* On push, **test.yml** triggers **dispatch.yml** with the default inputs variables.
-* On pull_request, run **dispatch.yml** directly w/o any variables (as a result, the job becomes not main)
+* You can manually trigger python test from `https://github.com/<owner>/<repo>/actions/workflows/python_test.yml`
 * Setup with poetry.
 * inputs variables for main_branch, main_os and main_pyver
 * inputs variable for tmate and run only for the main combinations.
