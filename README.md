@@ -149,7 +149,6 @@ on:
   push:
     branches-ignore:
       - "coverage"
-  pull_request:
 
 jobs:
   test:
@@ -177,7 +176,8 @@ jobs:
 
 * **dispatch.yml** has default values of the main condition.
 * You can manually trigger dispatch.yml from `https://github.com/<owner>/<repo>/actions/workflows/dispatch.yml`
-* On push/pull request, **test.yml** triggers **dispatch.yml** with the default inputs variables.
+* On push, **test.yml** triggers **dispatch.yml** with the default inputs variables.
+* On pull_request, run **dispatch.yml** directly w/o any variables (as a result, the job becomes not main)
 * Setup with poetry.
 * inputs variables for main_branch, main_os and main_pyver
 * inputs variable for tmate and run only for the main combinations.
