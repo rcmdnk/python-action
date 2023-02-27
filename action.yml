@@ -164,7 +164,6 @@ runs:
     - name: Run test
       id: pytest
       if: ${{ inputs.pytest == '1' }}
-      continue-on-error: true
       run: |
         pytest_opt=("--durations=0")
         if [ "${{ inputs.coverage }}" = "1" ];then
@@ -189,11 +188,11 @@ runs:
     - name: pre-commit
       if: ${{ inputs.pre-commit == '1' }}
       id: preCommit
-      continue-on-error: true
       run: |
         echo "::group::pre-commit"
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
-        $poetry_cmd pre-commit run -a
+        $poetry_cmd pre-commit run -a && status=0 || status=1
+        echo "STATUS=$status" >> $GITHUB_OUTPUT
         git checkout .
         echo "::endgroup::"
       shell: bash
@@ -276,7 +275,7 @@ runs:
         fi
         pre_commit=1
         if [ "${{ inputs.pre-commit }}" = 1 ];then
-          if [ "${{ steps.preCommit.outcome }}" != "success" ];then
+          if [ "${{ steps.preCommit.outputs.STATUS }}" != "0" ];then
             echo "pre-commit failed!"
             pre_commit=0
             output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical)"
