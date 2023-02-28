@@ -58,13 +58,17 @@ inputs:
     description: 'Comma separated test file names which are excluded from the pytest.'
     default: ''
     required: true
+  pytest-separate-benchmark:
+    description: 'Set 1 to run benchmark tests separately (execute only once at the main test, by --benchmark-disable) and show the benchmark results in the summary (need pytest-benchmark).'
+    default: '0'
+    required: true
+  coverage:
+    description: 'Set 1 to check coverage for pytest (pytest-cov will be installed if not installed).'
+    default: '1'
+    required: true
   pytest-cov-path:
     description: 'Path to check coverage.'
     default: 'src'
-    required: true
-  coverage:
-    description: 'Set 1 to check coverage for pytest.'
-    default: '1'
     required: true
   coverage-push:
     description: 'Set 1 to push the coverage result to coverage branch.'
@@ -166,12 +170,17 @@ runs:
       if: ${{ inputs.pytest == '1' }}
       continue-on-error: true
       run: |
+        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
         pytest_opt=("--durations=0")
         if [ "${{ inputs.coverage }}" = "1" ];then
+          pip_list=$($poetry_cmd pip list 2>&1)
+          if ! echo "$pip_list" | grep -q "^pytest-cov ";then
+            pip install pytest-cov
+          fi
           pytest_opt=("${pytest_opt[@]}" "--junitxml=pytest.xml" "--cov-report=term-missing:skip-covered")
-        fi
-        if [ -n "${{ inputs.pytest-cov-path }}" ];then
-          pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.pytest-cov-path }}")
+          if [ -n "${{ inputs.pytest-cov-path }}" ];then
+            pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.pytest-cov-path }}")
+          fi
         fi
         if [ -n "${{ inputs.pytest-ignore }}" ];then
           IFS_ORIG=$IFS
@@ -182,9 +191,36 @@ runs:
             pytest_opt=("${pytest_opt[@]}" "--ignore=$f")
           done
         fi
-        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        if [ "${{ inputs.pytest-separate-benchmark }}" = "1" ];then
+          pytest_opt=("${pytest_opt[@]}" "--benchmark-disable")
+        fi
         echo \$ $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
-        $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee pytest-coverage.txt
+        $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee pytest-coverage.txt && status=0 || status=1
+        echo "status=$status" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Run benchmark test
+      id: benchmark
+      if: ${{ inputs.pytest == '1' && inputs.pytest-separate-benchmark == '1' }}
+      continue-on-error: true
+      run: |
+        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        pytest_opt=(--benchmark-only --benchmark-enable)
+        if [ -n "${{ inputs.pytest-ignore }}" ];then
+          IFS_ORIG=$IFS
+          IFS=","
+          read -a files <<< "${{ inputs.pytest-ignore }}"
+          IFS=$IFS_ORIG
+          for f in "${files[@]}";do
+            pytest_opt=("${pytest_opt[@]}" "--ignore=$f")
+          done
+        fi
+        pip_list=$($poetry_cmd pip list 2>&1)
+        if echo "$pip_list" | grep -q "^pytest-xdist ";then
+          pytest_opt=("${pytest_opt[@]}" "-n0")
+        fi
+        echo \$ $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
+        $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee benchmark.txt && status=0 || status=1
+        echo "status=$status" >> $GITHUB_OUTPUT
       shell: bash
     - name: pre-commit
       if: ${{ inputs.pre-commit == '1' }}
@@ -266,7 +302,7 @@ runs:
         output=""
         pytest=1
         if [ "${{ inputs.pytest }}" = 1 ];then
-          if [ "${{ steps.coverageComment.outputs.failures }}" != 0 ] || [ "${{ steps.coverageComment.outputs.errors }}" != 0 ];then
+          if [ "${{ steps.pytest.outputs.status }}" != "0" ];then
             echo "Pytest failed!"
             pytest=0
             output="${output}![pytest](https://img.shields.io/badge/pytest-failing-critical)"
@@ -288,6 +324,14 @@ runs:
 
         if [ "${{ inputs.coverage }}" = 1 ];then
           echo -e ${{ steps.coverageComment.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ "${{ inputs.pytest-separate-benchmark }}" = 1 ];then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Benchmark tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat benchmark.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         fi
         (( pytest == 1 )) && (( pre_commit == 1 ))
       shell: bash

@@ -21,8 +21,9 @@ cache-hash-file| File name to be used for the cache hash key. The cache hash key
 pytest| Set `1` to run pytest | `1` | No
 pytest-tests-path| Path to the directory of the test files.| `tests/` | No
 pytest-ignore| Comma separated test files which are excluded from the pytest. |'' | No
+pytest-separate-benchmark| Set 1 to run benchmark tests separately (execute only once at the main test, by --benchmark-disable) and show the benchmark results in the summary (need [pytest-benchmark](https://pypi.org/project/pytest-benchmark/).|`0` | No
+coverage | Set `1` to check coverage for pytest ([pytest-cov](https://pypi.org/project/pytest-cov/) will be installed if not installed). | `1` | No
 pytest-cov-path| Path to check coverage.| `src` | No
-coverage | Set `1` to check coverage for pytest. | `1` | No
 coverage-push | Set `1` to push the coverage result to `coverage` branch. | `0` | No
 coverage-push-condition | Condition to push the coverage. This will be shown in the README if it is not empty. | '' | No
 github_token | Token to push `coverage` branch.| `${{ github.token }}` | No
