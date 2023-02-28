@@ -193,7 +193,7 @@ runs:
         echo "::group::pre-commit"
         poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
         $poetry_cmd pre-commit run -a && status=0 || status=1
-        echo "STATUS=$status" >> $GITHUB_OUTPUT
+        echo "status=$status" >> $GITHUB_OUTPUT
         git checkout .
         echo "::endgroup::"
       shell: bash
@@ -276,7 +276,7 @@ runs:
         fi
         pre_commit=1
         if [ "${{ inputs.pre-commit }}" = 1 ];then
-          if [ "${{ steps.preCommit.outputs.STATUS }}" != "0" ];then
+          if [ "${{ steps.preCommit.outputs.status }}" != "0" ];then
             echo "pre-commit failed!"
             pre_commit=0
             output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical)"
