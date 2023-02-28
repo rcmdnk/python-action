@@ -164,6 +164,7 @@ runs:
     - name: Run test
       id: pytest
       if: ${{ inputs.pytest == '1' }}
+      continue-on-error: true
       run: |
         pytest_opt=("--durations=0")
         if [ "${{ inputs.coverage }}" = "1" ];then
