@@ -144,6 +144,8 @@ runs:
       with:
         path: ${{ inputs.cache-path }}
         key: cache-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles(inputs.cache-hash-file) }}
+        restore-keys: |
+          cache-${{ runner.os }}-${{ inputs.python-version }}-
     - name: Install poetry
       if: ${{ inputs.poetry == '1' }}
       run: |
