@@ -35,16 +35,8 @@ inputs:
     default: '1'
     required: true
   cache:
-    description: 'Set 1 to use cache with cache action.'
-    default: '1'
-    required: true
-  cache-path:
-    description: 'Cache path.'
-    default: '~/.cache/pypoetry'
-    required: true
-  cache-hash-file:
-    description: 'File name to be used for the cache hash key.'
-    default: '**/poetry.lock'
+    description: 'Cache type, "pip" or "poetry".'
+    default: 'poetry'
     required: true
   pytest:
     description: 'Set 1 to run pytest.'
@@ -134,25 +126,18 @@ runs:
       with:
         persist-credentials: false
         fetch-depth: 0
-    - uses: actions/setup-python@v4
-      if: ${{ inputs.setup-python == '1' }}
-      with:
-        python-version: ${{ inputs.python-version }}
-    - name: Cache Packages
-      uses: actions/cache@v3
-      if: ${{ inputs.cache == '1' }}
-      with:
-        path: ${{ inputs.cache-path }}
-        key: cache-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles(inputs.cache-hash-file) }}
-        restore-keys: |
-          cache-${{ runner.os }}-${{ inputs.python-version }}-
     - name: Install poetry
       if: ${{ inputs.poetry == '1' }}
       run: |
         echo "::group::${{ inputs.pip}} install poetry"
-        ${{ inputs.pip }} install poetry
+        pipx install poetry
         echo "::endgroup::"
       shell: bash
+    - uses: actions/setup-python@v4
+      if: ${{ inputs.setup-python == '1' }}
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: ${{ inputs.cache }}
     - name: Setup environment
       if: ${{ inputs.setup-cmd != '' }}
       run: |
