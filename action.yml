@@ -58,8 +58,12 @@ inputs:
     description: 'Set 1 to check coverage for pytest (pytest-cov will be installed if not installed).'
     default: '1'
     required: true
-  pytest-cov-path:
+  coverage-cov-path:
     description: 'Path to check coverage.'
+    default: 'src'
+    required: true
+  pytest-cov-path:
+    description: 'Path to check coverage (alternative to coverage-cov-path, to keep backward compatibility).'
     default: 'src'
     required: true
   coverage-push:
@@ -165,7 +169,9 @@ runs:
             pip install pytest-cov
           fi
           pytest_opt=("${pytest_opt[@]}" "--junitxml=pytest.xml" "--cov-report=term-missing:skip-covered")
-          if [ -n "${{ inputs.pytest-cov-path }}" ];then
+          if [ -n "${{ inputs.coverage-cov-path }}" ];then
+            pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.coverage-cov-path }}")
+          elif [ -n "${{ inputs.pytest-cov-path }}" ];then
             pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.pytest-cov-path }}")
           fi
         fi
