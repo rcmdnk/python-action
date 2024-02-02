@@ -236,6 +236,9 @@ runs:
         junitxml-path: ./pytest.xml
     - name: Check the output coverage
       if: ${{ inputs.coverage == '1' }}
+      env:
+        # notSuccessTestInfo may includes brackets in skip content and it makes an error "syntax error near unexpected token `('" if it is used directly in the run
+        NOT_SUCCESS_TEST_INFO: "${{ steps.coverageComment.outputs.notSuccessTestInfo }}"
       run: |
         echo "::group::coverage result"
         echo "Coverage Percantage - ${{ steps.coverageComment.outputs.coverage }}"
@@ -246,7 +249,7 @@ runs:
         echo "Coverage Skipped - ${{ steps.coverageComment.outputs.skipped }}"
         echo "Coverage Tests - ${{ steps.coverageComment.outputs.tests }}"
         echo "Coverage Time - ${{ steps.coverageComment.outputs.time }}"
-        echo "Not Success Test Info - ${{ steps.coverageComment.outputs.notSuccessTestInfo }}"
+        echo "Not Success Test Info - $NOT_SUCCESS_TEST_INFO"
         echo "::endgroup::"
       shell: bash
     - name: Update Readme in coverage branch with Coverage Html and commit to coverage branch
