@@ -1,5 +1,5 @@
 name: 'Python Test Action'
-description: 'GitHub Action for Python (Poetry, pytest with coverage, linters with pre-commit) '
+description: 'GitHub Action for Python (poetry/uv, pytest with coverage, linters with pre-commit) '
 author: 'rcmdnk'
 branding:
   icon: 'check-square'
@@ -16,26 +16,10 @@ inputs:
     required: true
   python-version:
     description: '`python-version` for setup-python.'
-    default: '3.10'
+    default: '3.12'
     required: true
-  pip:
-    description: 'pip command (e.g. `pip`, `pip3`, `pip3.10`).'
-    default: 'pip'
-    required: true
-  setup-cmd:
-    description: 'Python environment setup command.'
-    default: 'poetry install'
-    required: true
-  pip-packages:
-    description: 'Space separated package names to be installed by pip.'
-    default: ''
-    required: true
-  poetry:
-    description: 'Set 1 to setup by poetry.'
-    default: '1'
-    required: true
-  cache:
-    description: 'Cache type, "pip" or "poetry".'
+  setup-type: 
+    description: 'Python environment setup type (poetry, uv or pip).'
     default: 'poetry'
     required: true
   pytest:
@@ -131,29 +115,41 @@ runs:
         persist-credentials: false
         fetch-depth: 0
     - name: Install poetry
-      if: ${{ inputs.poetry == '1' }}
+      if: ${{ inputs.setup-type == 'poetry' }}
       run: |
-        echo "::group::${{ inputs.pip}} install poetry"
+        echo "::group::pipx install poetry"
         pipx install poetry
         echo "::endgroup::"
       shell: bash
     - uses: actions/setup-python@v5
-      if: ${{ inputs.setup-python == '1' }}
+      if: ${{ inputs.setup-python == '1' && inputs.setup-type != 'uv' }}
       with:
         python-version: ${{ inputs.python-version }}
-        cache: ${{ inputs.cache }}
-    - name: Setup environment
-      if: ${{ inputs.setup-cmd != '' }}
+        cache: ${{ inputs.setup-type }}
+    - name: Install uv
+      if: ${{ inputs.setup-type == 'uv' }}
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: |
+          **/pyproject.toml
+    - name: Setup python version for uv
+      if: ${{ inputs.setup-type == 'uv' }}
       run: |
-        echo "::group::${{ inputs.setup-cmd }}"
-        ${{ inputs.setup-cmd }}
+        echo "::group::python version for uv"
+        echo ${{ inputs.python-version }} > .python-version
         echo "::endgroup::"
       shell: bash
-    - name: Install packages
-      if: ${{ inputs.pip-packages != '' }}
+    - name: Setup environment
       run: |
-        echo "::group::${{ inputs.pip }} install ${{ inputs.pip-packages }}"
-        ${{ inputs.pip }} install ${{ inputs.pip-packages }}
+        echo "::group::${{ inputs.setup-type }}"
+        if [ ${{ inputs.setup-type }} = 'poetry' ];then
+          poetry install
+        elif [ ${{ inputs.setup-type }} = 'uv' ];then
+          uv install
+        else
+          pip install .
+        fi
         echo "::endgroup::"
       shell: bash
     - name: Run test
@@ -161,10 +157,10 @@ runs:
       if: ${{ inputs.pytest == '1' }}
       continue-on-error: true
       run: |
-        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        cmd_prefix="${{ inputs.setup-type == 'poetry' && 'poetry run ' || inputs.setup-type == 'uv' && 'uv run ' || ''}}"
         pytest_opt=("--durations=0")
         if [ "${{ inputs.coverage }}" = "1" ];then
-          pip_list=$($poetry_cmd pip list 2>&1)
+          pip_list=$($cmd_prefix pip list 2>&1)
           if ! echo "$pip_list" | grep -q "^pytest-cov ";then
             pip install pytest-cov
           fi
@@ -187,8 +183,8 @@ runs:
         if [ "${{ inputs.pytest-separate-benchmark }}" = "1" ];then
           pytest_opt=("${pytest_opt[@]}" "--benchmark-disable")
         fi
-        echo \$ $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
-        $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee pytest-coverage.txt && status=0 || status=1
+        echo \$ $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
+        $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee pytest-coverage.txt && status=0 || status=1
         echo "status=$status" >> $GITHUB_OUTPUT
       shell: bash
     - name: Run benchmark test
@@ -196,7 +192,7 @@ runs:
       if: ${{ inputs.pytest == '1' && inputs.pytest-separate-benchmark == '1' }}
       continue-on-error: true
       run: |
-        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
+        cmd_prefix="${{ inputs.setup-type == 'poetry' && 'poetry run ' || inputs.setup-type == 'uv' && 'uv run ' || ''}}"
         pytest_opt=(--benchmark-only --benchmark-enable)
         if [ -n "${{ inputs.pytest-ignore }}" ];then
           IFS_ORIG=$IFS
@@ -207,12 +203,12 @@ runs:
             pytest_opt=("${pytest_opt[@]}" "--ignore=$f")
           done
         fi
-        pip_list=$($poetry_cmd pip list 2>&1)
+        pip_list=$($cmd_prefix pip list 2>&1)
         if echo "$pip_list" | grep -q "^pytest-xdist ";then
           pytest_opt=("${pytest_opt[@]}" "-n0")
         fi
-        echo \$ $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
-        $poetry_cmd pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee benchmark.txt && status=0 || status=1
+        echo \$ $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
+        $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee benchmark.txt && status=0 || status=1
         echo "status=$status" >> $GITHUB_OUTPUT
       shell: bash
     - name: pre-commit
@@ -220,8 +216,8 @@ runs:
       id: preCommit
       run: |
         echo "::group::pre-commit"
-        poetry_cmd="${{ inputs.poetry == '1' && 'poetry run ' || ''}}"
-        $poetry_cmd pre-commit run -a && status=0 || status=1
+        cmd_prefix="${{ inputs.setup-type == 'poetry' && 'poetry run ' || inputs.setup-type == 'uv' && 'uv run ' || ''}}"
+        $cmd_prefix pre-commit run -a && status=0 || status=1
         echo "status=$status" >> $GITHUB_OUTPUT
         git checkout .
         echo "::endgroup::"

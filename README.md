@@ -10,14 +10,8 @@ Name | Description | Default | Required
 -|:-|-|-
 checkout| Set `1` to run [checkout](https://github.com/marketplace/actions/checkout). | `1` | No
 set-python| Set `1` to run [setup-pytyon](https://github.com/marketplace/actions/setup-python). | `1` | No
-python-version| `python-version` for setup-python. | `3.10` | No
-pip| pip command (e.g. `pip`, `pip3`, `pip3.10`). | `pip` | No
-setup-cmd| Python environment setup command (e.g. `poetry install`, `pip install .`). | `poetry install` | No
-pip-packages| Space separated package names to be installed by pip. If your `setup-cmd` does not install such pytest, pytest-cov or pre-commit, set like `pytest pytest-cov pre-commit`.| ''
-poetry| Set `1` to set up by poetry (`poetry` package is automatically installed by pip). | `1` | No
-cache| Set `1` to use cache with [cache](https://github.com/marketplace/actions/cache) | `1` | No
-cache-path| Cache path. | `~/.cache/pypoetry` | No
-cache-hash-file| File name to be used for the cache hash key. The cache hash key is set as `cache-${{ runner.os }}-${{ inputs.python-version}}-${{ hashFiles(inputs.cache-hash-file) }}`| `**/poetry.lock` | No
+python-version| `python-version` for setup-python. | `3.12` | No
+setup-type| Python environment setup type (`poetry` `uv`, or `pip`.). | `poetry` | No
 pytest| Set `1` to run pytest | `1` | No
 pytest-tests-path| Path to the directory of the test files.| `tests/` | No
 pytest-ignore| Comma separated test files which are excluded from the pytest. |'' | No
