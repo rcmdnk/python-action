@@ -137,7 +137,7 @@ runs:
       if: ${{ inputs.setup-type == 'uv' }}
       run: |
         echo "::group::python version for uv"
-        echo ${{ inputs.python-version }} > .python-version
+        uv python pin ${{ inputs.python-version }}
         echo "::endgroup::"
       shell: bash
     - name: Setup environment
