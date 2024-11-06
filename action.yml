@@ -146,9 +146,9 @@ runs:
         if [ ${{ inputs.setup-type }} = 'poetry' ];then
           poetry install
         elif [ ${{ inputs.setup-type }} = 'uv' ];then
-          uv install
+          uv sync
         else
-          pip install .
+          pip install -r requirements.txt
         fi
         echo "::endgroup::"
       shell: bash
