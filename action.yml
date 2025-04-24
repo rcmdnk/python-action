@@ -128,7 +128,7 @@ runs:
         cache: ${{ inputs.setup-type }}
     - name: Install uv
       if: ${{ inputs.setup-type == 'uv' }}
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@v6
       with:
         enable-cache: true
         cache-dependency-glob: |
