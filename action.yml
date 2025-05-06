@@ -50,6 +50,10 @@ inputs:
     description: 'Path to check coverage (alternative to coverage-cov-path, to keep backward compatibility).'
     default: 'src'
     required: true
+  pytest-opt:
+    description: 'Additional options for pytest.'
+    default: ''
+    required: true
   coverage-push:
     description: 'Set 1 to push the coverage result to coverage branch.'
     default: '0'
@@ -183,8 +187,8 @@ runs:
         if [ "${{ inputs.pytest-separate-benchmark }}" = "1" ];then
           pytest_opt=("${pytest_opt[@]}" "--benchmark-disable")
         fi
-        echo \$ $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}"
-        $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" | tee pytest-coverage.txt && status=0 || status=1
+        echo \$ $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" "${{ inputs.pytest-opt }}"
+        $cmd_prefix pytest "${pytest_opt[@]}" "${{ inputs.pytest-tests-path }}" "${{ inputs.pytest-opt }}"| tee pytest-coverage.txt && status=0 || status=1
         echo "status=$status" >> $GITHUB_OUTPUT
       shell: bash
     - name: Run benchmark test
