@@ -171,9 +171,9 @@ runs:
           pytest_opt=("${pytest_opt[@]}" "--junitxml=pytest.xml" "--cov-report=term-missing:skip-covered")
           cov_path=src
           if [ -n "${{ inputs.coverage-cov-path }}" ];then
-            cov_path=${{ inputs.coverage-cov-path }}"
+            cov_path="${{ inputs.coverage-cov-path }}"
           elif [ -n "${{ inputs.pytest-cov-path }}" ];then
-            cov_path=${{ inputs.pytest-cov-path }}"
+            cov_path="${{ inputs.pytest-cov-path }}"
           fi
           pytest_opt=("${pytest_opt[@]}" "--cov=${cov_path}")
         fi
