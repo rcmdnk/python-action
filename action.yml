@@ -44,11 +44,11 @@ inputs:
     required: true
   coverage-cov-path:
     description: 'Path to check coverage.'
-    default: 'src'
+    default: ''
     required: true
   pytest-cov-path:
     description: 'Path to check coverage (alternative to coverage-cov-path, to keep backward compatibility).'
-    default: 'src'
+    default: ''
     required: true
   pytest-opt:
     description: 'Additional options for pytest.'
@@ -169,11 +169,13 @@ runs:
             pip install pytest-cov
           fi
           pytest_opt=("${pytest_opt[@]}" "--junitxml=pytest.xml" "--cov-report=term-missing:skip-covered")
+          cov_path=src
           if [ -n "${{ inputs.coverage-cov-path }}" ];then
-            pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.coverage-cov-path }}")
+            cov_path=${{ inputs.coverage-cov-path }}"
           elif [ -n "${{ inputs.pytest-cov-path }}" ];then
-            pytest_opt=("${pytest_opt[@]}" "--cov=${{ inputs.pytest-cov-path }}")
+            cov_path=${{ inputs.pytest-cov-path }}"
           fi
+          pytest_opt=("${pytest_opt[@]}" "--cov=${cov_path}")
         fi
         if [ -n "${{ inputs.pytest-ignore }}" ];then
           IFS_ORIG=$IFS
