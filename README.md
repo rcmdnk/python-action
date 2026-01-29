@@ -12,6 +12,7 @@ checkout| Set `1` to run [checkout](https://github.com/marketplace/actions/check
 set-python| Set `1` to run [setup-pytyon](https://github.com/marketplace/actions/setup-python). | `1` | No
 python-version| `python-version` for setup-python. | `3.12` | No
 setup-type| Python environment setup type (`poetry` `uv`, or `pip`.). | `poetry` | No
+setup-option| Additional options for setup type. For `poetry`, you can set additional options for `poetry install` command (e.g. `--no-dev`). | `''` | No
 pytest| Set `1` to run pytest | `1` | No
 pytest-tests-path| Path to the directory of the test files.| `tests/` | No
 pytest-ignore| Comma separated test files which are excluded from the pytest. |'' | No

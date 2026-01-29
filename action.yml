@@ -22,6 +22,10 @@ inputs:
     description: 'Python environment setup type (poetry, uv or pip).'
     default: 'poetry'
     required: true
+  setup-option: 
+    description: 'Additional options for python environment setup.'
+    default: ''
+    required: true
   pytest:
     description: 'Set 1 to run pytest.'
     default: '1'
@@ -148,11 +152,11 @@ runs:
       run: |
         echo "::group::${{ inputs.setup-type }}"
         if [ ${{ inputs.setup-type }} = 'poetry' ];then
-          poetry install
+          poetry install ${{ inputs.setup-option }}
         elif [ ${{ inputs.setup-type }} = 'uv' ];then
-          uv sync
+          uv sync ${{ inputs.setup-option }}
         else
-          pip install -r requirements.txt
+          pip install -r requirements.txt ${{ inputs.setup-option }}
         fi
         echo "::endgroup::"
       shell: bash
