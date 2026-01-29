@@ -165,13 +165,20 @@ runs:
       if: ${{ inputs.pytest == '1' }}
       continue-on-error: true
       run: |
+        if ! type pytest > /dev/null 2>&1;then
+          echo "::group::install pytest"
+          pip install pytest
+          echo "::endgroup::"
+        fi
         cmd_prefix="${{ inputs.setup-type == 'poetry' && 'poetry run ' || inputs.setup-type == 'uv' && 'uv run ' || ''}}"
         pytest_opt=("--durations=0")
         if [ "${{ inputs.coverage }}" = "1" ];then
+          echo "::group::install pytest-cov"
           pip_list=$($cmd_prefix pip list 2>&1)
           if ! echo "$pip_list" | grep -q "^pytest-cov ";then
             pip install pytest-cov
           fi
+          echo "::endgroup::"
           pytest_opt=("${pytest_opt[@]}" "--junitxml=pytest.xml" "--cov-report=term-missing:skip-covered")
           cov_path=src
           if [ -n "${{ inputs.coverage-cov-path }}" ];then
@@ -225,6 +232,11 @@ runs:
       if: ${{ inputs.pre-commit == '1' }}
       id: preCommit
       run: |
+        if ! type pre-commit > /dev/null 2>&1;then
+          echo "::group::install pre-commit"
+          pip install pre-commit
+          echo "::endgroup::"
+        fi
         echo "::group::pre-commit"
         cmd_prefix="${{ inputs.setup-type == 'poetry' && 'poetry run ' || inputs.setup-type == 'uv' && 'uv run ' || ''}}"
         $cmd_prefix pre-commit run -a && status=0 || status=1
