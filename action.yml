@@ -129,7 +129,7 @@ runs:
         pipx install poetry
         echo "::endgroup::"
       shell: bash
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       if: ${{ inputs.setup-python == '1' && inputs.setup-type != 'uv' }}
       with:
         python-version: ${{ inputs.python-version }}
