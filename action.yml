@@ -1,5 +1,5 @@
 name: 'Python Test Action'
-description: 'GitHub Action for Python (poetry/uv, pytest with coverage, linters with pre-commit) '
+description: 'GitHub Action for Python (poetry/uv, pytest with coverage, linters with prek/pre-commit) '
 author: 'rcmdnk'
 branding:
   icon: 'check-square'
@@ -72,6 +72,10 @@ inputs:
     required: true
   pre-commit:
     description: 'Set 1 to run pre-commit.'
+    default: '0'
+    required: true
+  prek:
+    description: 'Set 1 to run prek.'
     default: '0'
     required: true
   tmate:
@@ -244,6 +248,22 @@ runs:
         git checkout .
         echo "::endgroup::"
       shell: bash
+    - name: prek
+      if: ${{ inputs.prek == '1' }}
+      id: prek
+      run: |
+        if ! type prek > /dev/null 2>&1;then
+          echo "::group::install prek"
+          pip install prek
+          echo "::endgroup::"
+        fi
+        echo "::group::prek"
+        cmd_prefix="${{ inputs.setup-type == 'poetry' && 'poetry run ' || inputs.setup-type == 'uv' && 'uv run ' || ''}}"
+        $cmd_prefix prek run -a && status=0 || status=1
+        echo "status=$status" >> $GITHUB_OUTPUT
+        git checkout .
+        echo "::endgroup::"
+      shell: bash
     - name: Pytest coverage comment
       id: coverageComment
       if: ${{ inputs.coverage == '1' }}
@@ -328,6 +348,14 @@ runs:
         if [ "${{ inputs.pre-commit }}" = 1 ];then
           if [ "${{ steps.preCommit.outputs.status }}" != "0" ];then
             echo "pre-commit failed!"
+            pre_commit=0
+            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical)"
+          else
+            output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-passing-success)"
+          fi
+        elif [ "${{ inputs.prek }}" = 1 ];then
+          if [ "${{ steps.prek.outputs.status }}" != "0" ];then
+            echo "prek failed!"
             pre_commit=0
             output="${output}![pre-commit](https://img.shields.io/badge/pre_commit-failing-critical)"
           else

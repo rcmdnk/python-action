@@ -2,7 +2,7 @@
 
 [![test](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml/badge.svg)](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml)
 
-GitHub Action for Python (Poetry, pytest with coverage and  linters with pre-commit).
+GitHub Action for Python (Poetry, pytest with coverage and  linters with prek/pre-commit).
 
 ## Inputs
 
@@ -24,6 +24,7 @@ coverage-push | Set `1` to push the coverage result to `coverage` branch. | `0` 
 coverage-push-condition | Condition to push the coverage. This will be shown in the README if it is not empty. | '' | No
 github_token | Token to push `coverage` branch.| `${{ github.token }}` | No
 pre-commit | Set `1` to run pre-commit. | `0` | No
+prek | Set `1` to run prek. | `0` | No
 tmate | Set `1` to run [tmate](https://mxschmitt.github.io/action-tmate/). | `0` | No
 
 If you want to enable `coverage`,
@@ -44,6 +45,7 @@ Name | Description
 -|:-
 pytest| pytest status.
 pre_commit| pre-commit status.
+prek| prek status.
 coverage| Coverage Percantage.
 color| Coverage Color.
 warnings| Coverage Warnings.
@@ -140,7 +142,7 @@ jobs:
           python-version: "${{ matrix.python-version }}"
           coverage-push: "${{ env.is_main }}"
           coverage-push-condition: "branch=${{ env.main_branch }}, os=${{ env.main_os }}, python_version=${{ env.main_py_ver }}"
-          pre-commit: "${{ env.is_main }}"
+          prek: "${{ env.is_main }}"
           tmate: "${{ env.debug }}"
 ```
 
@@ -148,6 +150,6 @@ jobs:
 * Setup with poetry.
 * inputs variables for main_branch, main_os and main_pyver
 * inputs variable for tmate and run only for the main combinations.
-* Set `IS_MAIN` to run `pre-commit` and `push` only for the main combination of the matrix of `os` and `python-version`.
+* Set `IS_MAIN` to run `prek` and `push` only for the main combination of the matrix of `os` and `python-version`.
 
 Ref: https://github.com/rcmdnk/python-action-test/actions
