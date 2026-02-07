@@ -117,7 +117,7 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       if: ${{ inputs.checkout == '1' }}
       with:
         persist-credentials: false
