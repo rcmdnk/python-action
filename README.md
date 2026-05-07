@@ -2,7 +2,7 @@
 
 [![test](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml/badge.svg)](https://github.com/rcmdnk/python-action-test/actions/workflows/test.yml)
 
-GitHub Action for Python (Poetry, pytest with coverage and  linters with prek/pre-commit).
+GitHub Action for Python (uv/Poetry, pytest with coverage, linters with prek/pre-commit).
 
 ## Inputs
 
