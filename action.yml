@@ -148,7 +148,7 @@ runs:
       if: ${{ inputs.setup-python == '1' && inputs.setup-type != 'uv' }}
       with:
         python-version: ${{ inputs.python-version }}
-        cache: ${{ inputs.setup-type }}-${{ inputs.python-version }}
+        cache: ${{ inputs.setup-type }}
     - name: Install uv
       if: ${{ inputs.setup-type == 'uv' }}
       uses: astral-sh/setup-uv@v7
