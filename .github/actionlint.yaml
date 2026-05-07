@@ -1,0 +1,6 @@
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      # Ignore the following errors for actions/create-github-app-token, until https://github.com/rhysd/actionlint/pull/652 is merged and released.
+      - 'missing input "app-id" which is required by action'
+      - 'input "client-id" is not defined in action'

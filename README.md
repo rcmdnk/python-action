@@ -26,6 +26,11 @@ coverage-push-condition | Condition to push the coverage. This will be shown in 
 github_token | Token to push `coverage` branch.| `${{ github.token }}` | No
 pre-commit | Set `1` to run pre-commit. | `0` | No
 prek | Set `1` to run prek. | `0` | No
+private-repo-app-client-id | GitHub App Client ID for accessing private GitHub repositories. When set together with `private-repo-app-private-key`, `private-repo-app-owner`, and `private-repo-app-repositories`, a GitHub App installation token is generated and `url.*.insteadOf` rewrites are layered on the existing git config via `GIT_CONFIG_COUNT` so that the dependency installation step (`uv sync` / `poetry install` / `pip install`) can pull from the listed private repositories. | `''` | No
+private-repo-app-private-key | Private key of the GitHub App used to access private GitHub repositories. Used together with `private-repo-app-client-id`. | `''` | No
+private-repo-app-owner | GitHub organization or user where the GitHub App used for private repository access is installed. Used to scope the generated token and the `insteadOf` rewrites. | `''` | No
+private-repo-app-repositories | Private repositories to scope the generated token and `insteadOf` rewrites to. One repository name per line. | `''` | No
+private-repo-app-debug | Set `1` to print the resolved (token-redacted) `url.*.insteadOf` git config and run `git ls-remote` against each listed repository after the rewrite is configured. | `0` | No
 tmate | Set `1` to run [tmate](https://mxschmitt.github.io/action-tmate/). | `0` | No
 
 If you want to enable `coverage`,
@@ -154,3 +159,21 @@ jobs:
 * Set `IS_MAIN` to run `prek` and `push` only for the main combination of the matrix of `os` and `python-version`.
 
 Ref: https://github.com/rcmdnk/python-action-test/actions
+
+### Installing private GitHub dependencies via a GitHub App
+
+If your project depends on private repositories on GitHub, register a GitHub App
+installed on the relevant repositories with `Contents: read` permission, then
+pass its credentials to the action:
+
+```yaml
+- uses: rcmdnk/python-action@v1
+  with:
+    setup-type: uv
+    private-repo-app-client-id: ${{ vars.MY_APP_CLIENT_ID }}
+    private-repo-app-private-key: ${{ secrets.MY_APP_PRIVATE_KEY }}
+    private-repo-app-owner: my-org
+    private-repo-app-repositories: |
+      my-private-lib
+      another-private-lib
+```

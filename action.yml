@@ -14,6 +14,26 @@ inputs:
     description: 'Optional shell command(s) to run right after checkout. Multiple commands can be passed as a multi-line string.'
     default: ''
     required: false
+  private-repo-app-client-id:
+    description: 'GitHub App Client ID for accessing private GitHub repositories. If set together with private-repo-app-private-key, private-repo-app-owner, and private-repo-app-repositories, a GitHub App token is generated and used to rewrite git URLs so that private GitHub repositories can be accessed during dependency installation.'
+    default: ''
+    required: false
+  private-repo-app-private-key:
+    description: 'Private key of the GitHub App used to access private GitHub repositories. Used together with private-repo-app-client-id.'
+    default: ''
+    required: false
+  private-repo-app-owner:
+    description: 'GitHub organization or user where the GitHub App used for private repository access is installed. Used to scope the generated GitHub App token.'
+    default: ''
+    required: false
+  private-repo-app-repositories:
+    description: 'Private GitHub repositories to scope the generated GitHub App token to. One repository name per line.'
+    default: ''
+    required: false
+  private-repo-app-debug:
+    description: 'Set 1 to print sanitized git config and run git ls-remote tests after configuring the GitHub App token for private repository access.'
+    default: '0'
+    required: false
   setup-python:
     description: 'Set 1 to run setup-python.'
     default: '1'
@@ -137,6 +157,79 @@ runs:
         ${{ inputs.post-checkout-command }}
         echo "::endgroup::"
       shell: bash
+    - name: Generate GitHub App token for private repository access
+      id: private-repo-app-token
+      if: ${{ inputs.private-repo-app-client-id != '' && inputs.private-repo-app-private-key != '' && inputs.private-repo-app-owner != '' && inputs.private-repo-app-repositories != '' }}
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ inputs.private-repo-app-client-id }}
+        private-key: ${{ inputs.private-repo-app-private-key }}
+        owner: ${{ inputs.private-repo-app-owner }}
+        repositories: ${{ inputs.private-repo-app-repositories }}
+        permission-contents: read
+    - name: Configure Git URL rewrite for private repositories
+      id: private-repo-app-config
+      if: ${{ inputs.private-repo-app-client-id != '' && inputs.private-repo-app-private-key != '' && inputs.private-repo-app-owner != '' && inputs.private-repo-app-repositories != '' }}
+      shell: bash
+      env:
+        APP_TOKEN: ${{ steps.private-repo-app-token.outputs.token }}
+        APP_OWNER: ${{ inputs.private-repo-app-owner }}
+        APP_REPOS: ${{ inputs.private-repo-app-repositories }}
+      run: |
+        set -euo pipefail
+
+        # Use GIT_CONFIG_COUNT/GIT_CONFIG_KEY_<n>/GIT_CONFIG_VALUE_<n> to add
+        # url.*.insteadOf entries on top of the runner's existing global git
+        # config (~/.gitconfig or $XDG_CONFIG_HOME/git/config). This avoids
+        # replacing the global config and assuming a particular path.
+        # Per-repository entries keep the token attached only to the listed
+        # repositories.
+        count=0
+        while IFS= read -r repo; do
+          repo="$(echo "$repo" | xargs)"
+          [ -z "$repo" ] && continue
+          target="https://x-access-token:${APP_TOKEN}@github.com/${APP_OWNER}/${repo}"
+          for src in \
+            "ssh://git@github.com/${APP_OWNER}/${repo}" \
+            "git@github.com:${APP_OWNER}/${repo}" \
+            "https://github.com/${APP_OWNER}/${repo}"
+          do
+            key_name="GIT_CONFIG_KEY_${count}"
+            val_name="GIT_CONFIG_VALUE_${count}"
+            key_val="url.${target}.insteadOf"
+            export "${key_name}=${key_val}"
+            export "${val_name}=${src}"
+            {
+              echo "${key_name}=${key_val}"
+              echo "${val_name}=${src}"
+            } >> "$GITHUB_ENV"
+            count=$((count + 1))
+          done
+        done <<< "$APP_REPOS"
+        export GIT_CONFIG_COUNT="${count}"
+        echo "GIT_CONFIG_COUNT=${count}" >> "$GITHUB_ENV"
+        echo "count=${count}" >> "$GITHUB_OUTPUT"
+
+        # Poetry uses dulwich by default, which does not honor GIT_CONFIG_*
+        # env vars. Force the system git client so the rewrite applies.
+        echo "POETRY_SYSTEM_GIT_CLIENT=true" >> "$GITHUB_ENV"
+        echo "POETRY_EXPERIMENTAL_SYSTEM_GIT_CLIENT=true" >> "$GITHUB_ENV"
+
+        if [ "${{ inputs.private-repo-app-debug }}" = "1" ]; then
+          echo "::group::git config (effective)"
+          git config --get-regexp '^url\..*\.insteadOf$' \
+            | sed -E 's#x-access-token:[^@]+@#x-access-token:***@#g' || true
+          echo "::endgroup::"
+
+          echo "::group::git ls-remote tests"
+          while IFS= read -r repo; do
+            repo="$(echo "$repo" | xargs)"
+            [ -z "$repo" ] && continue
+            echo "Testing ${APP_OWNER}/${repo}"
+            git ls-remote "ssh://git@github.com/${APP_OWNER}/${repo}" HEAD
+          done <<< "$APP_REPOS"
+          echo "::endgroup::"
+        fi
     - name: Install poetry
       if: ${{ inputs.setup-type == 'poetry' }}
       run: |
@@ -276,6 +369,31 @@ runs:
         git checkout .
         echo "::endgroup::"
       shell: bash
+    - name: Clear GitHub App token git environment
+      # Use always() so the rewrite is dropped even when an earlier step
+      # (e.g. poetry install / uv sync) fails, preventing the tokenized git
+      # access from leaking into later workflow steps that use if: always().
+      if: ${{ always() && inputs.private-repo-app-client-id != '' && inputs.private-repo-app-private-key != '' && inputs.private-repo-app-owner != '' && inputs.private-repo-app-repositories != '' }}
+      shell: bash
+      env:
+        COUNT: ${{ steps.private-repo-app-config.outputs.count }}
+      run: |
+        set -euo pipefail
+        # Disable the env-based git config layer so subsequent git operations
+        # see only the runner's normal global config.
+        echo "GIT_CONFIG_COUNT=0" >> "$GITHUB_ENV"
+        # Scrub the token-bearing GIT_CONFIG_KEY_<n>/VALUE_<n> values so the
+        # app token does not appear in `printenv` for later steps.
+        if [ -n "${COUNT:-}" ] && [ "${COUNT}" -gt 0 ] 2>/dev/null; then
+          i=0
+          while [ "${i}" -lt "${COUNT}" ]; do
+            echo "GIT_CONFIG_KEY_${i}=" >> "$GITHUB_ENV"
+            echo "GIT_CONFIG_VALUE_${i}=" >> "$GITHUB_ENV"
+            i=$((i + 1))
+          done
+        fi
+        echo "POETRY_SYSTEM_GIT_CLIENT=" >> "$GITHUB_ENV"
+        echo "POETRY_EXPERIMENTAL_SYSTEM_GIT_CLIENT=" >> "$GITHUB_ENV"
     - name: Pytest coverage comment
       id: coverageComment
       if: ${{ inputs.coverage == '1' }}
