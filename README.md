@@ -9,7 +9,7 @@ GitHub Action for Python (Poetry, pytest with coverage and  linters with prek/pr
 Name | Description | Default | Required
 -|:-|-|-
 checkout| Set `1` to run [checkout](https://github.com/marketplace/actions/checkout). | `1` | No
-post-checkout-command| Optional shell command(s) to run right after checkout (only when `checkout` is `1`). Multiple commands can be passed as a multi-line string (e.g. with YAML `\|`). The value is interpolated into a `bash` script, so pass only trusted content. | `''` | No
+post-checkout-command| Optional shell command(s) to run right after checkout (even if checkout is disabled). Multiple commands can be passed as a multi-line string (e.g. with YAML `\|`). The value is interpolated into a `bash` script, so pass only trusted content. | `''` | No
 set-python| Set `1` to run [setup-pytyon](https://github.com/marketplace/actions/setup-python). | `1` | No
 python-version| `python-version` for setup-python. | `3.12` | No
 setup-type| Python environment setup type (`poetry` `uv`, or `pip`.). | `poetry` | No

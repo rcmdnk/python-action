@@ -131,7 +131,7 @@ runs:
         persist-credentials: false
         fetch-depth: 0
     - name: Run post-checkout command
-      if: ${{ inputs.checkout == '1' && inputs.post-checkout-command != '' }}
+      if: ${{ inputs.post-checkout-command != '' }}
       run: |
         echo "::group::post-checkout command"
         ${{ inputs.post-checkout-command }}
