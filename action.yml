@@ -10,6 +10,10 @@ inputs:
     description: 'Set 1 to run checkout.'
     default: '1'
     required: true
+  post-checkout-command:
+    description: 'Optional shell command(s) to run right after checkout. Multiple commands can be passed as a multi-line string.'
+    default: ''
+    required: false
   setup-python:
     description: 'Set 1 to run setup-python.'
     default: '1'
@@ -126,6 +130,13 @@ runs:
       with:
         persist-credentials: false
         fetch-depth: 0
+    - name: Run post-checkout command
+      if: ${{ inputs.checkout == '1' && inputs.post-checkout-command != '' }}
+      run: |
+        echo "::group::post-checkout command"
+        ${{ inputs.post-checkout-command }}
+        echo "::endgroup::"
+      shell: bash
     - name: Install poetry
       if: ${{ inputs.setup-type == 'poetry' }}
       run: |
