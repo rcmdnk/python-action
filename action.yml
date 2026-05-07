@@ -148,7 +148,7 @@ runs:
       if: ${{ inputs.setup-python == '1' && inputs.setup-type != 'uv' }}
       with:
         python-version: ${{ inputs.python-version }}
-        cache: ${{ inputs.setup-type }}
+        cache: ${{ inputs.setup-type }}-${{ inputs.python-version }}
     - name: Install uv
       if: ${{ inputs.setup-type == 'uv' }}
       uses: astral-sh/setup-uv@v7
@@ -156,6 +156,7 @@ runs:
         enable-cache: true
         cache-dependency-glob: |
           **/pyproject.toml
+          **/uv.lock
     - name: Setup python version for uv
       if: ${{ inputs.setup-type == 'uv' }}
       run: |
